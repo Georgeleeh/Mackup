@@ -26,6 +26,9 @@ class Mackup:
         self.ignore_folders_list = self.script_folder / Path('ignore.cfg')
         self.log_file = self.samba_folder / Path(self.device_name) / Path(self.TODAY) / Path(f'{self.TODAY}_log.txt')
 
+        if not self.log_file.exists():
+            self.log_file.parent.mkdir(exist_ok=True, parents=True)
+
         logging.basicConfig(filename=self.log_file,
                             filemode='w',
                             format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
@@ -49,7 +52,7 @@ class Mackup:
             if dweet['content']['status'] == self.BUSY:
                 time.sleep(wait_time)
             else:
-                if dweet['content']['device'] == previous_device:
+                if dweet_device == previous_device:
                     logging.info('Previous Device finished, continuing')
                     break
                 else:
