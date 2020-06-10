@@ -1,10 +1,10 @@
+import paho.mqtt.publish as publish
 from shutil import copy2, rmtree
 from datetime import datetime
 from pathlib import Path
 import os
 import stat
 import time
-import dweepy
 import logging
 import zipfile
 
@@ -42,6 +42,7 @@ class Mackup:
         txt = open(self.backup_folders_list, 'r')
         return [Path(line) for line in txt.read().splitlines()]
 
+
     def wait_for_previous(self, previous_device, follow_order=True, timeout=30, wait_time=30):
         logging.info('Waiting for previous device...')
 
@@ -70,13 +71,13 @@ class Mackup:
             self.__backup()
         except Exception as e:
             print(e)
-            self.__send_dweet(self.ERROR)
+            self.__post_mqtt(self.ERROR)
             logging.critical(f'Backup Crashed!\n{e}')
 
     def __backup(self):
         logging.info(f'Starting {self.device_name} Back Up!')
 
-        self.__send_dweet(self.BUSY)
+        self.__post_mqtt(self.BUSY)
 
         self.backup_folder.mkdir(exist_ok=True, parents=True)
         
@@ -99,7 +100,7 @@ class Mackup:
         self.__delete_folder()
         logging.info('Deleting Unzipped Folder')
 
-        self.__send_dweet(self.FINISHED)
+        self.__post_mqtt(self.FINISHED)
 
         logging.info(f'{self.device_name} Finished!')
 
@@ -134,6 +135,8 @@ class Mackup:
     def mount_samba(self):
         os.system(f"mount_smbfs //{self.server} '{self.samba_folder}'")
     
-    def __send_dweet(self, status):
-        dweepy.dweet_for('Mackup', {'device':self.device_name, 'status':status})
-        logging.info('Samba Drive is Mounted')
+    def __post_mqtt(self, status):
+        Broker = '192.168.1.2'
+        pub_topic = f'Mackup/{self.device_name}'.replace(' ', '-')
+        publish.single(pub_topic, status,
+                                hostname=Broker, port=1883)
