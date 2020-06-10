@@ -42,7 +42,7 @@ class Mackup:
         txt = open(self.backup_folders_list, 'r')
         return [Path(line) for line in txt.read().splitlines()]
 
-
+    """
     def wait_for_previous(self, previous_device, follow_order=True, timeout=30, wait_time=30):
         logging.info('Waiting for previous device...')
 
@@ -62,7 +62,7 @@ class Mackup:
                         time.sleep(wait_time)
                     else:
                         logging.warning(f'Pinas not busy, backing up {self.device_name} out of order...')
-
+    """
 
 
     
@@ -75,6 +75,7 @@ class Mackup:
             logging.critical(f'Backup Crashed!\n{e}')
 
     def __backup(self):
+        print(f'Starting {self.device_name} Back Up!')
         logging.info(f'Starting {self.device_name} Back Up!')
 
         self.__post_mqtt(self.BUSY)
@@ -84,24 +85,32 @@ class Mackup:
         Z = self.backup_folder.parent / Path(self.TODAY + '.zip')
         if Z.exists():
             Z.unlink()
+            print('Removed Previous Week Backup')
             logging.info('Removed Previous Week Backup')
         else:
+            print('No Previous Week Backup Found')
             logging.info('No Previous Week Backup Found')
 
+        print('Starting Backup...')
         logging.info('Starting Backup...')
         for folder in self.save_folders:
+            print(f'Current Folder: {folder.stem}')
             logging.info(f'Current Folder: {folder.stem}')
             self.__copy_directory(folder)
+            print('Done!')
             logging.info('Done!')
 
+        print('Zipping Folder')
+        logging.info('Zipping Folder')
         self.__zip_backup()
-        logging.info('Zipped Folder')
 
-        self.__delete_folder()
+        print('Deleting Unzipped Folder')
         logging.info('Deleting Unzipped Folder')
+        self.__delete_folder()
 
         self.__post_mqtt(self.FINISHED)
 
+        print(f'{self.device_name} Finished!')
         logging.info(f'{self.device_name} Finished!')
 
     def __copy_directory(self, copy_folder):
