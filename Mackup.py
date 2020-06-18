@@ -1,5 +1,5 @@
 import paho.mqtt.publish as publish
-from shutil import copy2, rmtree
+from shutil import copy, copy2, rmtree
 from datetime import datetime
 from pathlib import Path
 import os
@@ -121,7 +121,12 @@ class Mackup:
         for item in copy_folder.glob('**/*'):
             dest = base_destination_folder / item.relative_to(copy_folder)
             if item.is_file():
-                copy2(str(item), str(dest))
+                try:
+                    copy2(str(item), str(dest))
+                except:
+                    print(f'Error: copy2 failed for {str(item)}, using copy')
+                    logging.warning(f'copy2 failed for {str(item)}, using copy')
+                    copy(str(item), str(dest))
             else:
                 dest.mkdir(parents=True)
 
@@ -142,10 +147,9 @@ class Mackup:
         zipf.close()
 
     def mount_samba(self):
-        os.system(f"mount_smbfs //{self.server} '{self.samba_folder}'")
+        os.system(f"mount_smbfs //pi@{self.server} '{self.samba_folder}'")
     
     def __post_mqtt(self, status):
         Broker = '192.168.1.2'
         pub_topic = f'Mackup/{self.device_name}'.replace(' ', '-')
-        publish.single(pub_topic, status,
-                                hostname=Broker, port=1883)
+        publish.single(pub_topic, status, hostname=Broker, port=1883)
